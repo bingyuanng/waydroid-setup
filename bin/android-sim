@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+config_home=${XDG_CONFIG_HOME:-$HOME/.config}
+config_file=$config_home/android-sim/config
+
+WIDTH=480
+HEIGHT=1071
+DENSITY=186
+MAX_FPS=120
+FAKE_TOUCH='*'
+
+if [[ -f $config_file ]]; then
+  # This file is generated for the current user and contains shell assignments.
+  # shellcheck source=/dev/null
+  source "$config_file"
+fi
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || {
+    printf 'Required command not found: %s\n' "$1" >&2
+    exit 1
+  }
+}
+
+start_session() {
+  if waydroid status | grep -q $'Session:\tRUNNING'; then
+    return
+  fi
+
+  systemd-run --user --unit="waydroid-session-$$" --collect --property=Type=exec \
+    waydroid session start >/dev/null
+  for _ in {1..60}; do
+    if waydroid status | grep -q $'Session:\tRUNNING'; then
+      return
+    fi
+    sleep 1
+  done
+
+  printf 'Timed out waiting for the Waydroid session.\n' >&2
+  exit 1
+}
+
+connect_adb() {
+  adb disconnect >/dev/null 2>&1 || true
+  waydroid adb connect >/dev/null
+  timeout 30 adb wait-for-device
+}
+
+apply_profile() {
+  waydroid prop set persist.waydroid.width "$WIDTH"
+  waydroid prop set persist.waydroid.height "$HEIGHT"
+  waydroid prop set persist.waydroid.max_fps "$MAX_FPS"
+  waydroid prop set persist.waydroid.fake_touch "$FAKE_TOUCH"
+  connect_adb
+  adb shell wm density "$DENSITY" >/dev/null
+}
+
+require_command waydroid
+require_command adb
+
+case "${1:-}" in
+  ls|list)
+    exec waydroid app list
+    ;;
+  run)
+    start_session
+    apply_profile
+    if [[ -n ${2:-} ]]; then
+      exec waydroid app launch "$2"
+    fi
+    exec waydroid show-full-ui
+    ;;
+  cold)
+    start_session
+    apply_profile
+    waydroid session stop || true
+    exec waydroid show-full-ui
+    ;;
+  configure)
+    start_session
+    apply_profile
+    printf 'Applied profile: %sx%s at %s dpi, up to %s FPS, fake touch: %s.\n' \
+      "$WIDTH" "$HEIGHT" "$DENSITY" "$MAX_FPS" "$FAKE_TOUCH"
+    ;;
+  stop)
+    exec waydroid session stop
+    ;;
+  status)
+    exec waydroid status
+    ;;
+  help|-h|--help|"")
+    printf '%s\n' \
+      'Usage:' \
+      '  android-sim list' \
+      '  android-sim run [PACKAGE]' \
+      '  android-sim cold' \
+      '  android-sim configure' \
+      '  android-sim stop' \
+      '  android-sim status'
+    ;;
+  *)
+    printf 'Unknown command: %s\n\n' "$1" >&2
+    exec "$0" help
+    ;;
+esac
