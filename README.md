@@ -20,7 +20,7 @@ the stock graphics configuration because the experimental `waydroid-nvidia` stac
 ## Install
 
 ```bash
-git clone https://github.com/YOUR-USER/waydroid-setup.git
+git clone https://github.com/bingyuanng/waydroid-setup.git
 cd waydroid-setup
 ./install.sh
 ```
