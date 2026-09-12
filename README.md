@@ -1,6 +1,6 @@
 # waydroid-setup
 
-Reproduce a gaming-oriented Waydroid setup on Arch Linux or CachyOS:
+Reproduce a configured Waydroid environment on Arch Linux or CachyOS:
 
 - Official GAPPS image
 - Magisk Delta root
@@ -15,7 +15,7 @@ Reproduce a gaming-oriented Waydroid setup on Arch Linux or CachyOS:
 
 The installer does not copy Android accounts, applications, secrets, or user data. It builds a
 fresh installation with the same system configuration. NVIDIA systems intentionally keep
-stock SwiftShader: the experimental `waydroid-nvidia` stack was unstable with the target game.
+the stock graphics configuration because the experimental `waydroid-nvidia` stack was unstable.
 
 ## Install
 
@@ -43,7 +43,7 @@ WIDTH=600 HEIGHT=1339 DENSITY=232 ./install.sh
 After installation, launcher settings live at `~/.config/android-sim/config`.
 
 `FAKE_TOUCH='*'` uses Waydroid's documented wildcard matching and applies mouse-to-touch
-translation to every package. It is not tied to a particular game.
+translation to every package.
 
 Set `INSTALL_MAGISK=false` or `INSTALL_HOUDINI=false` to omit either modification. Existing
 Waydroid images are reused; the script does not erase existing Android data.
